@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cofounder Office</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div id="app">
+
+      <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+      <aside class="sidebar">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+          COFOUNDER
+        </div>
+
+        <nav class="nav-section">
+          <div class="nav-title">Kanallar</div>
+          <div class="nav-item active" data-channel="#strateji">
+            #strateji <span class="channel-members">Mimar · PM</span>
+          </div>
+          <div class="nav-item" data-channel="#operasyon">
+            #operasyon <span class="channel-members">PM · İcracı</span>
+          </div>
+          <div class="nav-item" data-channel="#genel">
+            #genel <span class="channel-members">Tüm ekip</span>
+          </div>
+        </nav>
+
+        <!-- Aktif konuşma akışı -->
+        <div class="flow-indicator" id="flow-indicator" style="display:none">
+          <div class="nav-title" style="margin-bottom:6px">Aktif Akış</div>
+          <div class="flow-steps"></div>
+        </div>
+
+        <!-- Ajan durum kartları -->
+        <div class="nav-title">Ekip</div>
+
+        <div class="agent-card" data-role="mimar">
+          <div class="agent-avatar" data-role="mimar">M</div>
+          <div class="agent-info">
+            <div class="agent-card-name">Mimar (CVO)</div>
+            <div class="agent-activity">Çevrimiçi</div>
+          </div>
+          <span class="agent-status-dot status-idle"></span>
+        </div>
+        <div class="agent-card" data-role="arabulucu">
+          <div class="agent-avatar" data-role="arabulucu">A</div>
+          <div class="agent-info">
+            <div class="agent-card-name">Arabulucu (PM)</div>
+            <div class="agent-activity">Çevrimiçi</div>
+          </div>
+          <span class="agent-status-dot status-idle"></span>
+        </div>
+        <div class="agent-card" data-role="icraci">
+          <div class="agent-avatar" data-role="icraci">İ</div>
+          <div class="agent-info">
+            <div class="agent-card-name">İcracı (Doer)</div>
+            <div class="agent-activity">Çevrimiçi</div>
+          </div>
+          <span class="agent-status-dot status-idle"></span>
+        </div>
+      </aside>
+
+      <!-- ── Ana içerik ───────────────────────────────────────────────────── -->
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="workspace-tabs">
+            <button class="tab-btn active" data-tab="chat">💬 Ekip Sohbeti</button>
+            <button class="tab-btn" data-tab="mimar">🏛 Mimar Workspace</button>
+            <button class="tab-btn" data-tab="pm">📋 PM Board</button>
+            <button class="tab-btn" data-tab="icraci">⚙️ Doer Terminal</button>
+          </div>
+          <div class="session-info">
+            <span id="connection-status" class="status-chip status-connecting">Bağlanıyor</span>
+            <span id="cerebra-indicator" class="cerebra-chip" style="display:none">💾 </span>
+          </div>
+        </header>
+
+        <!-- Tab İçerikleri -->
+        <div id="tab-chat" class="tab-pane active">
+          <div class="workspace">
+            <div class="chat-container">
+              <div class="chat-messages" id="chat-messages"></div>
+              <div class="slash-hints" id="slash-hints" style="display:none">
+                <span class="slash-hint" data-cmd="/standup">/standup</span>
+                <span class="slash-hint" data-cmd="/audit">/audit</span>
+                <span class="slash-hint" data-cmd="/save">/save</span>
+              </div>
+              <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chat-input" placeholder="Mesaj yazın veya / ile komut girin..." />
+                <button class="send-btn" id="send-btn">Gönder</button>
+              </div>
+            </div>
+
+            <aside class="side-panel">
+              <div class="scratchpad">
+                <div class="scratch-title">Çalışma Önizlemesi</div>
+                <div class="scratch-content" id="scratch-content"></div>
+              </div>
+              <div class="audit-card" id="audit-card">
+                <div class="audit-title">Reality Audit</div>
+                <div id="audit-content" class="audit-items"></div>
+                <div id="audit-risk-bar" style="display:none" class="risk-bar-wrap">
+                  <div class="risk-label">Risk: <span id="risk-pct">0</span>%</div>
+                  <div class="risk-bar"><div class="risk-fill" id="risk-fill"></div></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div id="tab-mimar" class="tab-pane">
+          <div class="specialized-workspace">
+            <div class="workspace-header">🏛 Mimari Planlar & Vizyon Dökümanları</div>
+            <div id="mimar-docs" class="docs-grid">
+              <div class="doc-card placeholder">Henüz bir stratejik döküman üretilmedi.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-pm" class="tab-pane">
+          <div class="specialized-workspace">
+            <div class="workspace-header">📋 Görev Panosu (Task Board)</div>
+            <div id="pm-board" class="board-container">
+              <!-- Backlog Column -->
+              <div class="board-column">
+                <div class="column-title">📌 Backlog</div>
+                <div id="board-backlog" class="column-tasks"></div>
+              </div>
+              <!-- In Progress Column -->
+              <div class="board-column">
+                <div class="column-title">🚧 In Progress</div>
+                <div id="board-in-progress" class="column-tasks"></div>
+              </div>
+              <!-- Done Column -->
+              <div class="board-column">
+                <div class="column-title">✅ Done</div>
+                <div id="board-done" class="column-tasks"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-icraci" class="tab-pane">
+          <div class="specialized-workspace">
+            <div class="workspace-header">⚙️ Doer Terminal & Output</div>
+            <div class="terminal-container">
+              <div id="icraci-terminal" class="terminal-output"></div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- ── HITL Checkpoint Modal ──────────────────────────────────────────────── -->
+    <div id="hitl-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box hitl-box">
+        <div class="hitl-risk-badge" id="hitl-risk-badge">⚠️ Risk: <span id="hitl-risk-pct">0</span>%</div>
+        <div class="modal-title">PM Bu Kararı Riskli Buluyor</div>
+        <div class="hitl-vision" id="hitl-vision"></div>
+        <div class="hitl-gaps" id="hitl-gaps"></div>
+        <div class="hitl-question">Task zinciri başlatılsın mı?</div>
+        <div class="modal-actions">
+          <button id="hitl-reject" class="modal-btn-secondary">Durdur — gözden geçir</button>
+          <button id="hitl-approve" class="modal-btn-primary">Evet, başlat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Correction Modal ─────────────────────────────────────────────────── -->
+    <div id="correction-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box">
+        <div class="modal-title">↩ Düzeltme Gönder</div>
+        <div class="modal-subtitle" id="modal-role-label"></div>
+        <div class="modal-original" id="modal-original"></div>
+        <textarea id="correction-input" class="correction-textarea"
+          placeholder="'O böyle demez çünkü...' veya doğru versiyonu yazın"></textarea>
+        <div class="modal-actions">
+          <button id="correction-cancel" class="modal-btn-secondary">İptal</button>
+          <button id="correction-submit" class="modal-btn-primary">Gönder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Evolution Modal (Faz 6) ───────────────────────────────────────────── -->
+    <div id="evolution-modal" class="modal-overlay" style="display:none">
+      <div class="modal-box evolution-box">
+        <div class="evolution-header">
+          <span class="evolution-icon">🧠</span>
+          <div>
+            <div class="modal-title">Persona Evolution Taslağı</div>
+            <div class="modal-subtitle">Bu oturumdan öğrenilenleri persona track dosyalarına ekleyelim mi?</div>
+          </div>
+        </div>
+        <div id="evolution-drafts-container"></div>
+        <div class="modal-actions">
+          <button id="evolution-reject" class="modal-btn-secondary">Reddet</button>
+          <button id="evolution-approve" class="modal-btn-primary">Seçilenleri Onayla</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

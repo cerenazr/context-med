@@ -1,0 +1,43 @@
+# Office Operational Schema v1.0
+roster:
+  mimar:
+    persona_path: "brains/personas/cvo/persona.md"
+    work_path: "brains/personas/cvo/work.md"
+    role: "Mimar (CVO)"
+  arabulucu:
+    persona_path: "brains/personas/pm/persona.md"
+    work_path: "brains/personas/pm/work.md"
+    role: "Arabulucu (PM)"
+  icraci:
+    persona_path: "brains/personas/doer/persona.md"
+    work_path: "brains/personas/doer/work.md"
+    role: "İcracı (Doer)"
+
+hierarchy:
+  - mimar -> arabulucu (Strategic Direction)
+  - arabulucu -> icraci (Task Execution)
+  - arabulucu -> mimar (Decision Memos & Feasibility Reports)
+
+channels:
+  - name: "#strateji"
+    members: [mimar, arabulucu]
+    purpose: "Uzun vadeli vizyon ve üst düzey mimari kararlar."
+  - name: "#operasyon"
+    members: [arabulucu, icraci]
+    purpose: "Günlük görev yönetimi ve uygulama durumu."
+  - name: "#genel"
+    members: [mimar, arabulucu, icraci]
+    purpose: "Duyurular ve ekipler arası uyum."
+
+task_policies:
+  default_priority: "normal"
+  high_risk_threshold: "mimar_onayi_gerekli"
+  writeback_scope:
+    mimar: "brains/cofounder-office/decisions/"
+    arabulucu: "brains/cofounder-office/backlog/"
+    icraci: "brains/cofounder-office/execution_logs/"
+
+hitl_policy:
+  risk_class: "high"
+  checkpoint: "always"
+  description: "Any task involving financial impact, external publishing, or core architecture changes requires user approval."
