@@ -11,25 +11,12 @@ permissions:
 jobs:
   test-and-score:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov
-          # Install all packages as editable or at least dependencies
-          # Fallback to requirements if any exists, mostly for monorepo testing
-          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
 
       - name: Fetch base branch
         run: git fetch origin ${{ github.base_ref }}
@@ -38,44 +25,136 @@ jobs:
         id: pack
         run: |
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          # Get the primary package being touched
           TARGET_PACK=$(echo "$CHANGED_FILES" | grep '^packages/' | cut -d '/' -f 2 | sort | uniq | head -n 1)
           echo "target=$TARGET_PACK" >> $GITHUB_OUTPUT
 
-      - name: Run Pytest
-        if: steps.pack.outputs.target != ''
-        id: test
-        continue-on-error: true # Let it fail but we still calculate score and comment
+          # Detect runtime: node or python
+          if [ -n "$TARGET_PACK" ] && [ -f "packages/$TARGET_PACK/package.json" ]; then
+            echo "runtime=node" >> $GITHUB_OUTPUT
+          else
+            echo "runtime=python" >> $GITHUB_OUTPUT
+          fi
+
+      # ── Node.js path ──────────────────────────────────────────────────────────
+
+      - name: Set up Node.js
+        if: steps.pack.outputs.runtime == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: packages/${{ steps.pack.outputs.target }}/package-lock.json
+
+      - name: Install Node dependencies
+        if: steps.pack.outputs.runtime == 'node' && steps.pack.outputs.target != ''
         run: |
-          PACK_DIR="packages/${{ steps.pack.outputs.target }}"
-          echo "Running tests for $PACK_DIR"
-          
-          # Go to pack dir and run test
-          cd $PACK_DIR || exit 0
-          
-          # If we have a local src we install it
-          if [ -f "pyproject.toml" ]; then pip install -e .; fi
-          
-          pytest tests/ --junitxml=pytest.xml > pytest_output.txt || true
-          
-          # Basic gamification point extraction (Count passes/fails from text)
-          PASS_COUNT=$(grep -oP '\d+(?= passed)' pytest_output.txt || echo "0")
-          FAIL_COUNT=$(grep -oP '\d+(?= failed)' pytest_output.txt || echo "0")
-          
-          # GitHub Outputs
+          # Install root-level test helpers (shared fixtures / helpers)
+          if [ -f "package.json" ]; then npm install --ignore-scripts; fi
+          # Install package dependencies
+          cd packages/${{ steps.pack.outputs.target }}
+          npm install
+
+      - name: Run Jest
+        if: steps.pack.outputs.runtime == 'node' && steps.pack.outputs.target != ''
+        id: jest
+        continue-on-error: true
+        working-directory: packages/${{ steps.pack.outputs.target }}
+        env:
+          # Inject AI API keys from repo secrets for consult tests
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CI: true
+        run: |
+          # Run Jest with JSON reporter — never throws, we read exit code manually
+          npx jest tests/cli \
+            --json --outputFile=jest-results.json \
+            --forceExit \
+            --testTimeout=30000 \
+            2>jest-stderr.txt || true
+
+          # Parse results
+          if [ -f jest-results.json ]; then
+            PASS_COUNT=$(node -e "const r=require('./jest-results.json'); console.log(r.numPassedTests ?? 0)")
+            FAIL_COUNT=$(node -e "const r=require('./jest-results.json'); console.log(r.numFailedTests ?? 0)")
+          else
+            PASS_COUNT=0
+            FAIL_COUNT=0
+          fi
+
           echo "passed=$PASS_COUNT" >> $GITHUB_OUTPUT
           echo "failed=$FAIL_COUNT" >> $GITHUB_OUTPUT
-          
-          # Basic score formula (10 per pass, -5 per fail)
+
+          # Score: +10 per pass, -5 per fail, floor 0
           SCORE=$(( PASS_COUNT * 10 - FAIL_COUNT * 5 ))
           if [ $SCORE -lt 0 ]; then SCORE=0; fi
           echo "score=$SCORE" >> $GITHUB_OUTPUT
-          
-          # For step success check
+
           if [ "$FAIL_COUNT" != "0" ]; then
-             echo "conclusion=failure" >> $GITHUB_OUTPUT
+            echo "conclusion=failure" >> $GITHUB_OUTPUT
           else
-             echo "conclusion=success" >> $GITHUB_OUTPUT
+            echo "conclusion=success" >> $GITHUB_OUTPUT
+          fi
+
+      # ── Python path ───────────────────────────────────────────────────────────
+
+      - name: Set up Python
+        if: steps.pack.outputs.runtime == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        if: steps.pack.outputs.runtime == 'python' && steps.pack.outputs.target != ''
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+
+      - name: Run Pytest
+        if: steps.pack.outputs.runtime == 'python' && steps.pack.outputs.target != ''
+        id: pytest
+        continue-on-error: true
+        run: |
+          PACK_DIR="packages/${{ steps.pack.outputs.target }}"
+          cd $PACK_DIR || exit 0
+
+          if [ -f "pyproject.toml" ]; then pip install -e .; fi
+          pytest tests/ --junitxml=pytest.xml > pytest_output.txt || true
+
+          PASS_COUNT=$(grep -oP '\d+(?= passed)' pytest_output.txt || echo "0")
+          FAIL_COUNT=$(grep -oP '\d+(?= failed)' pytest_output.txt || echo "0")
+
+          echo "passed=$PASS_COUNT" >> $GITHUB_OUTPUT
+          echo "failed=$FAIL_COUNT" >> $GITHUB_OUTPUT
+
+          SCORE=$(( PASS_COUNT * 10 - FAIL_COUNT * 5 ))
+          if [ $SCORE -lt 0 ]; then SCORE=0; fi
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+
+          if [ "$FAIL_COUNT" != "0" ]; then
+            echo "conclusion=failure" >> $GITHUB_OUTPUT
+          else
+            echo "conclusion=success" >> $GITHUB_OUTPUT
+          fi
+
+      # ── Unified scoring & PR comment ──────────────────────────────────────────
+
+      - name: Resolve test outputs
+        id: test
+        run: |
+          # Merge node or python outputs into a single step output
+          RUNTIME="${{ steps.pack.outputs.runtime }}"
+          if [ "$RUNTIME" = "node" ]; then
+            echo "passed=${{ steps.jest.outputs.passed }}"     >> $GITHUB_OUTPUT
+            echo "failed=${{ steps.jest.outputs.failed }}"     >> $GITHUB_OUTPUT
+            echo "score=${{ steps.jest.outputs.score }}"       >> $GITHUB_OUTPUT
+            echo "conclusion=${{ steps.jest.outputs.conclusion }}" >> $GITHUB_OUTPUT
+          else
+            echo "passed=${{ steps.pytest.outputs.passed }}"   >> $GITHUB_OUTPUT
+            echo "failed=${{ steps.pytest.outputs.failed }}"   >> $GITHUB_OUTPUT
+            echo "score=${{ steps.pytest.outputs.score }}"     >> $GITHUB_OUTPUT
+            echo "conclusion=${{ steps.pytest.outputs.conclusion }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Post PR Score Comment
@@ -84,29 +163,33 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const passed = parseInt(`${{ steps.test.outputs.passed || 0 }}`);
-            const failed = parseInt(`${{ steps.test.outputs.failed || 0 }}`);
-            const score = parseInt(`${{ steps.test.outputs.score || 0 }}`);
+            const passed    = parseInt(`${{ steps.test.outputs.passed    || 0 }}`);
+            const failed    = parseInt(`${{ steps.test.outputs.failed    || 0 }}`);
+            const score     = parseInt(`${{ steps.test.outputs.score     || 0 }}`);
             const conclusion = `${{ steps.test.outputs.conclusion }}`;
-            const packName = `${{ steps.pack.outputs.target }}`;
+            const packName  = `${{ steps.pack.outputs.target }}`;
+            const runtime   = `${{ steps.pack.outputs.runtime }}`;
 
-            let emoji = conclusion === 'success' ? '✅' : '❌';
+            const emoji = conclusion === 'success' ? '✅' : '❌';
+            const runtimeBadge = runtime === 'node' ? '🟨 Jest (Node.js)' : '🐍 pytest (Python)';
+
             let message = `## Test & Gamification Skor Tablosu 🏆\n\n`;
             message += `**Hedef Paket:** \`${packName}\`\n`;
+            message += `**Test Koşucusu:** ${runtimeBadge}\n`;
             message += `**Durum:** ${emoji}\n\n`;
-            
+
             message += `| Metrik | Değer |\n`;
             message += `| :--- | :--- |\n`;
             message += `| 🟢 Geçen Testler | **${passed}** |\n`;
             message += `| 🔴 Kalan Testler | **${failed}** |\n`;
             message += `| ⭐ **Kazanılan Puan** | **${score} XP** |\n\n`;
-            
+
             if (conclusion !== 'success') {
-                message += `**⚠️ PR'ın Merge edilebilmesi için tüm testlerin geçmesi zorunludur!** Lütfen paketinizi düzeltin.`;
+              message += `**⚠️ PR'ın Merge edilebilmesi için tüm testlerin geçmesi zorunludur!** Lütfen paketinizi düzeltin.`;
             } else {
-                message += `🎉 Tebrikler! Tüm testler başarıyla geçti.`;
+              message += `🎉 Tebrikler! Tüm testler başarıyla geçti.`;
             }
-            
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -117,5 +200,5 @@ jobs:
       - name: Gate Check
         if: steps.test.outputs.conclusion == 'failure'
         run: |
-           echo "Tests failed. Failing the workflow to block merge."
-           exit 1
+          echo "Tests failed. Failing the workflow to block merge."
+          exit 1

@@ -1,0 +1,21 @@
+{
+  "name": "cofounder-office",
+  "version": "0.1.0",
+  "description": "Cofounder Office CLI — AI persona roster, digest, consult, fire, eval",
+  "main": "src/index.js",
+  "bin": {
+    "cofounder-office": "./bin/cli.js"
+  },
+  "scripts": {
+    "test": "jest tests/cli"
+  },
+  "dependencies": {
+    "commander": ">=11",
+    "dotenv": ">=16",
+    "openai": ">=4",
+    "@google/generative-ai": ">=0.20"
+  },
+  "devDependencies": {
+    "jest": ">=29"
+  }
+}
