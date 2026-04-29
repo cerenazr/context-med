@@ -91,11 +91,12 @@ npx cofounder-office eval \
 
 ```bash
 npm test
-# Test Suites: 2 passed, 2 total
-# Tests:       30 passed, 0 failed
+# Şu an: Tests: 28 failed, 2 passed, 30 total  ← implementasyon bekleniyor
+# Hedef: Tests: 30 passed, 0 failed
 ```
 
-Testler PR açıldığında CI tarafından otomatik çalışır. Tüm testler geçmeden merge açılmaz.
+PR açıldığında CI otomatik devreye girer ve Jest sonuçlarını PR'a yorum olarak atar.  
+**Tüm 30 test geçmeden merge bloklanır.**
 
 ---
 
