@@ -142,7 +142,7 @@ OPENROUTER_API_KEY  → https://openrouter.ai/api/v1
 ## PR Akışı
 
 Çalışmalarını bir branch'te yap, PR aç. CI otomatik testleri çalıştırır ve PR'a skor yazar.  
-**Tüm 31 test geçmeden merge açılmaz.**
+**Tüm 30 test geçmeden merge açılmaz.**
 
 ## Tamamlanma kriteri
 
