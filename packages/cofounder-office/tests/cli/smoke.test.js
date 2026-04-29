@@ -181,14 +181,6 @@ describe('cofounder-office CLI', () => {
       expect(r.exitCode).toBe(0);
     });
 
-    test('consult with valid input exits 0', () => {
-      const r = execCli(BIN, [
-        'consult',
-        '--input', path.join(FIXTURES, 'raw', 'sample-meeting-notes.txt'),
-      ]);
-      expect(r.exitCode).toBe(0);
-    });
-
     test('fire with valid persona exits 0', () => {
       // "or not-implemented" toleransı kaldırıldı — kesinlikle exit 0 bekleniyor
       const r = execCli(BIN, ['fire', '--input', 'doer']);

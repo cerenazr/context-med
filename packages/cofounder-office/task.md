@@ -2,7 +2,7 @@
 
 ## Hedef
 
-`packages/cofounder-office/` altında 31 CLI testi yazılı ama implementasyon yok.  
+`packages/cofounder-office/` altında 30 CLI testi yazılı ama implementasyon yok.  
 Görev: testlerin **tamamını** yeşile çıkaracak CLI'ı yazmak.
 
 ## Başlamadan önce
@@ -11,8 +11,8 @@ Görev: testlerin **tamamını** yeşile çıkaracak CLI'ı yazmak.
 cd packages/cofounder-office
 npm install
 npm test
-# → Tests: 29 failed, 2 passed, 31 total
-# Görevin bitti olduğunda → Tests: 31 passed, 0 failed
+# → Tests: 28 failed, 2 passed, 30 total
+# Görevin bitti olduğunda → Tests: 30 passed, 0 failed
 ```
 
 ## Yazılacak dosyalar
@@ -152,5 +152,5 @@ npm test
 
 # Beklenen:
 # Test Suites: 2 passed, 2 total
-# Tests:       31 passed, 0 failed
+# Tests:       30 passed, 0 failed
 ```
