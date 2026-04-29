@@ -1,16 +1,5 @@
 # Task: cofounder-office CLI Implementasyonu
 
-## Durum
-
-| Adım | Durum |
-|------|-------|
-| Testler yazıldı (`smoke.test.js` + `integration.test.js`) | ✅ Tamamlandı |
-| CI workflow Node.js/Jest desteği eklendi | ✅ Tamamlandı |
-| `GROQ_API_KEY` GitHub Secret olarak eklendi | ✅ Tamamlandı |
-| CLI implementasyonu | ⏳ **Seni bekliyor** |
-
----
-
 ## Hedef
 
 `packages/cofounder-office/` altında 31 CLI testi yazılı ama implementasyon yok.  
@@ -150,17 +139,10 @@ OPENROUTER_API_KEY  → https://openrouter.ai/api/v1
 
 > **Not:** `dotenv` paketinin stdout'a log yazmasına dikkat et — stdout'a sadece komut çıktısı gitmeli, log değil.
 
-## CI Sistemi
+## PR Akışı
 
-PR açtığında `.github/workflows/ci-eval.yml` otomatik çalışır:
-
-- `packages/cofounder-office/` değişikliklerini detect eder
-- `npm install` + `jest --json` çalıştırır
-- Her geçen test **+10 XP**, her fail **-5 XP**
-- PR'a skor tablosu yorum atılır
-- **Tüm testler geçmeden merge bloklanır**
-
-`GROQ_API_KEY` CI'a inject edilmiştir — `consult` testleri gerçek AI'ya bağlanır.
+Çalışmalarını bir branch'te yap, PR aç. CI otomatik testleri çalıştırır ve PR'a skor yazar.  
+**Tüm 31 test geçmeden merge açılmaz.**
 
 ## Tamamlanma kriteri
 
